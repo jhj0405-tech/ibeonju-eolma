@@ -1,0 +1,318 @@
+<!-- test -->
+line2<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#111111">
+<title>이번주 얼마</title>
+<style>
+:root{
+--bg:#f6f4ef; --card:#ffffff; --ink:#1b1b1b; --sub:#77736b; --line:#e7e3da;
+--ok:#2f9e5b; --warn:#e8a317; --bad:#e0452b; --fire:#b31d0b;
+--accent:var(--ok);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",sans-serif}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:480px;margin:0 auto;padding:20px 18px 120px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+header h1{font-size:17px;margin:0;font-weight:700;letter-spacing:-.3px}
+header .week{font-size:13px;color:var(--sub)}
+.iconbtn{border:0;background:transparent;font-size:22px;padding:6px;cursor:pointer}
+.hero{background:var(--card);border-radius:28px;padding:26px 22px 22px;text-align:center;
+box-shadow:0 1px 0 var(--line)}
+.hero .emoji{font-size:110px;line-height:1.1}
+.hero .mood{font-size:18px;font-weight:700;margin:6px 0 14px;color:var(--accent)}
+.spent{font-size:34px;font-weight:800;letter-spacing:-1px}
+.spent small{font-size:16px;color:var(--sub);font-weight:600;letter-spacing:0}
+.bar{height:14px;background:var(--line);border-radius:99px;overflow:hidden;margin:16px 0 10px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .5s}
+.stats{display:flex;justify-content:space-between;font-size:14px;color:var(--sub)}
+.stats b{color:var(--ink);font-size:16px;display:block;margin-top:2px}
+h2{font-size:15px;margin:26px 4px 10px;color:var(--sub);font-weight:600}
+.list{background:var(--card);border-radius:20px;overflow:hidden}
+.item{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);gap:12px}
+.item:last-child{border-bottom:0}
+.item .m{flex:1;min-width:0}
+.item .shop{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .when{font-size:12px;color:var(--sub);margin-top:2px}
+.item .amt{font-weight:700}
+.item.ex{opacity:.4}.item.ex .amt{text-decoration:line-through}
+.item.neg .amt{color:var(--ok)}
+.item .x{border:0;background:var(--bg);border-radius:10px;padding:6px 9px;font-size:13px;color:var(--sub)}
+.empty{padding:28px;text-align:center;color:var(--sub);font-size:14px}
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom));
+border:0;background:var(--ink);color:#fff;font-size:17px;font-weight:700;padding:16px 30px;
+border-radius:99px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+/* sheets */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end;z-index:20}
+.sheet-bg.on{display:flex}
+.sheet{background:var(--card);width:100%;max-width:480px;margin:0 auto;border-radius:24px 24px 0 0;
+padding:22px 20px calc(24px + env(safe-area-inset-bottom))}
+.sheet h3{margin:0 0 14px;font-size:18px}
+label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
+input,textarea{width:100%;font-size:18px;padding:14px;border:1px solid var(--line);border-radius:14px;
+background:var(--bg);font-family:inherit;color:var(--ink)}
+textarea{font-size:14px;min-height:96px}
+.row{display:flex;gap:10px;margin-top:18px}
+.btn{flex:1;border:0;border-radius:14px;padding:15px;font-size:16px;font-weight:700;background:var(--ink);color:#fff}
+.btn.ghost{background:var(--bg);color:var(--ink)}
+.hint{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.5}
+.tabs{display:flex;background:var(--bg);border-radius:12px;padding:4px;margin-bottom:6px}
+.tabs button{flex:1;border:0;background:transparent;padding:9px;border-radius:9px;font-size:14px;font-weight:600;color:var(--sub)}
+.tabs button.on{background:var(--card);color:var(--ink)}
+/* big alert */
+.alert{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;
+justify-content:center;text-align:center;padding:30px;color:#fff}
+.alert.on{display:flex;animation:fade .25s ease}
+.alert .big{font-size:min(56vw,300px);line-height:1;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+.alert.shake .big{animation:pop .5s cubic-bezier(.2,1.6,.4,1), shake .6s .5s 2}
+.alert .t1{font-size:30px;font-weight:800;margin-top:22px;letter-spacing:-.5px}
+.alert .t2{font-size:18px;margin-top:10px;opacity:.92;line-height:1.5}
+.alert .close{margin-top:34px;border:2px solid rgba(255,255,255,.7);background:transparent;color:#fff;
+font-size:16px;font-weight:700;padding:13px 34px;border-radius:99px}
+@keyframes pop{from{transform:scale(.2)}to{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.toast{position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+background:var(--ink);color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;z-index:60;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div><h1>이번주 얼마</h1><div class="week" id="weekLabel"></div></div>
+<button class="iconbtn" id="openSettings" aria-label="설정">⚙️</button>
+</header>
+<section class="hero">
+<div class="emoji" id="heroEmoji">🙂</div>
+<div class="mood" id="heroMood"></div>
+<div class="spent"><span id="spent">0</span><small>원 / <span id="limit">0</span>원</small></div>
+<div class="bar"><i id="bar"></i></div>
+<div class="stats">
+<div>남은 돈<b id="left">0원</b></div>
+<div style="text-align:right">오늘부터 하루<b id="perDay">0원</b></div>
+</div>
+</section>
+<h2>이번 주 지출</h2>
+<div class="list" id="list"></div>
+</div>
+<button class="fab" id="openAdd">＋ 추가</button>
+<!-- add sheet -->
+<div class="sheet-bg" id="addSheet">
+<div class="sheet">
+<h3>지출 추가</h3>
+<div class="tabs"><button class="on" data-tab="manual">직접 입력</button><button data-tab="sms">문자 붙여넣기</button></div>
+<div id="tabManual">
+<label>금액</label><input id="inAmt" inputmode="numeric" placeholder="12000">
+<label>어디서 (선택)</label><input id="inShop" placeholder="현금, 계좌이체 등">
+</div>
+<div id="tabSms" style="display:none">
+<label>카드 승인 문자 전체</label>
+<textarea id="inSms" placeholder="[Web발신] ○○카드 승인 홍*동 12,000원 일시불 11/17 12:30 스타벅스 누적..."></textarea>
+<div class="hint">문자를 그대로 붙여넣으면 금액과 가맹점을 자동으로 찾아요. 단축어가 제대로 읽는지 시험할 때도 써요.</div>
+</div>
+<div class="row"><button class="btn ghost" data-close>취소</button><button class="btn" id="saveAdd">추가</button></div>
+</div>
+</div>
+<!-- settings sheet -->
+<div class="sheet-bg" id="setSheet">
+<div class="sheet">
+<h3>설정</h3>
+<label>이번 주 한도 (매주 월요일 0시에 새로 시작)</label>
+<input id="inLimit" inputmode="numeric" placeholder="100000">
+<label>경고 시작 지점 (%)</label>
+<input id="inWarn" inputmode="numeric" placeholder="90">
+<div class="hint">이 비율을 넘으면 결제할 때마다 화면 가득 경고가 떠요.</div>
+<div class="row"><button class="btn ghost" id="testAlert">경고 미리보기</button></div>
+<div class="row"><button class="btn ghost" data-close>닫기</button><button class="btn" id="saveSet">저장</button></div>
+</div>
+</div>
+<div class="alert" id="alert">
+<div class="big" id="aEmoji"></div>
+<div class="t1" id="aT1"></div>
+<div class="t2" id="aT2"></div>
+<button class="close" id="aClose">확인</button>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+/* ---------- storage ---------- */
+const KEY = 'weekly-limit-v1';
+function load(){
+try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && d.items) return d; }catch(e){}
+return {limit:100000, warn:90, items:[], seen:[]};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+let S = load();
+/* ---------- helpers ---------- */
+const won = n => Math.round(n).toLocaleString('ko-KR');
+const $ = id => document.getElementById(id);
+function weekStart(d=new Date()){
+const x = new Date(d); x.setHours(0,0,0,0);
+const day = (x.getDay()+6)%7; // Monday=0
+x.setDate(x.getDate()-day); return x;
+}
+function thisWeek(){ const ws = weekStart().getTime(); return S.items.filter(i=>i.t>=ws); }
+function total(){ return thisWeek().filter(i=>!i.ex).reduce((s,i)=>s+i.a,0); }
+function level(ratio){
+const w = (S.warn||90)/100;
+if(ratio>=1.5) return {e:'🔥',m:'완전 폭주 중',c:'var(--fire)',bg:'#b31d0b',alarm:true};
+if(ratio>=1)   return {e:'💀',m:'한도 초과!',c:'var(--bad)',bg:'#e0452b',alarm:true};
+if(ratio>=w)   return {e:'😰',m:'초과 직전!',c:'var(--warn)',bg:'#e8a317',alarm:true};
+if(ratio>=0.7) return {e:'😐',m:'슬슬 조심',c:'var(--warn)',bg:'#2b2b2b',alarm:false};
+if(ratio>=0.4) return {e:'🙂',m:'괜찮아요',c:'var(--ok)',bg:'#2f9e5b',alarm:false};
+return {e:'😎',m:'여유 넘쳐요',c:'var(--ok)',bg:'#2f9e5b',alarm:false};
+}
+/* ---------- SMS parser ---------- */
+function parseSms(raw){
+const text = String(raw||'').replace(/\r/g,'').replace(/\[Web발신\]/g,'').trim();
+if(!text) return null;
+const cancel = /취소/.test(text);
+// amounts like 12,000원 — skip 누적/잔액/한도 numbers
+const re = /([0-9][0-9,]*)\s*원/g; let m, amount=null;
+while((m = re.exec(text))){
+const before = text.slice(Math.max(0,m.index-6), m.index);
+if(/(누적|잔액|한도|가능|합계|남은)\s*:?\s*$/.test(before)) continue;
+const v = parseInt(m[1].replace(/,/g,''),10);
+if(v>0){ amount=v; break; }
+}
+if(amount===null) return {error:'금액을 찾지 못했어요'};
+// shop: text after a time like 12:30 (same line or next line)
+let shop='';
+const lines = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+const flat = lines.join('\n');
+const tm = flat.match(/\d{1,2}:\d{2}(?::\d{2})?[ \t]*([^\n]*)(?:\n([^\n]*))?/);
+if(tm){
+shop = (tm[1]||'').trim();
+if(!shop || /^(누적|잔액)/.test(shop)) shop = (tm[2]||'').trim();
+}
+shop = shop.replace(/(누적|잔액)[\s:]*[0-9,]+\s*원?.*$/,'').replace(/^[\-·:\s]+/,'').trim();
+if(!shop || /^[0-9,]+\s*원/.test(shop) || /^(누적|잔액)/.test(shop)) shop='';
+const card = (text.match(/([가-힣A-Za-z]{1,8}(카드|체크|BC|bc))/)||[])[1]||'';
+if(!shop) shop = card ? card+' 결제' : '카드 결제';
+return {a: cancel ? -amount : amount, s: (cancel?'[취소] ':'')+shop.slice(0,30)};
+}
+/* ---------- add ---------- */
+function addItem(a, s, fromSms){
+const before = total();
+S.items.push({id:Date.now()+''+Math.random().toString(36).slice(2,6), a, s:s||'지출', t:Date.now(), ex:false});
+// keep 10 weeks
+const cut = weekStart().getTime() - 70*864e5; S.items = S.items.filter(i=>i.t>=cut);
+save(); render();
+showResult(a, s, before, fromSms);
+}
+function showResult(a, s, before, big){
+const t = total(), lim = S.limit||1, L = level(t/lim);
+if(a<0){ toast(`취소 반영: ${won(-a)}원 돌려받음`); return; }
+if(L.alarm || big){
+const left = lim - t;
+$('alert').style.background = L.alarm ? L.bg : '#2f9e5b';
+$('aEmoji').textContent = L.alarm ? L.e : '✅';
+$('aT1').textContent = L.alarm ? L.m : '기록했어요';
+$('aT2').innerHTML = `${s?escapeHtml(s)+' · ':''}${won(a)}원<br>` +
+(left>=0 ? `이번 주 남은 돈 <b>${won(left)}원</b>` : `한도보다 <b>${won(-left)}원</b> 더 썼어요`);
+$('alert').classList.toggle('shake', L.alarm);
+$('alert').classList.add('on');
+if(navigator.vibrate) navigator.vibrate(L.alarm?[200,100,200]:60);
+} else toast(`${won(a)}원 추가`);
+}
+/* ---------- render ---------- */
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+const lim = S.limit||0, t = total(), ratio = lim? t/lim : 0, L = level(ratio);
+document.documentElement.style.setProperty('--accent', L.c);
+$('heroEmoji').textContent = L.e; $('heroMood').textContent = L.m;
+$('spent').textContent = won(t); $('limit').textContent = won(lim);
+$('bar').style.width = Math.min(100, ratio*100)+'%';
+const left = lim - t;
+$('left').textContent = left>=0 ? won(left)+'원' : '-'+won(-left)+'원';
+const ws = weekStart(), daysLeft = 7 - Math.floor((Date.now()-ws)/864e5);
+$('perDay').textContent = left>0 ? won(left/daysLeft)+'원' : '0원';
+const we = new Date(ws); we.setDate(we.getDate()+6);
+$('weekLabel').textContent = `${ws.getMonth()+1}/${ws.getDate()} ~ ${we.getMonth()+1}/${we.getDate()}`;
+const items = thisWeek().sort((a,b)=>b.t-a.t);
+$('list').innerHTML = items.length ? items.map(i=>{
+const d = new Date(i.t), days='일월화수목금토';
+return `<div class="item ${i.ex?'ex':''} ${i.a<0?'neg':''}" data-id="${i.id}">
+<div class="m"><div class="shop">${escapeHtml(i.s)}</div>
+<div class="when">${d.getMonth()+1}/${d.getDate()}(${days[d.getDay()]}) ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}</div></div>
+<div class="amt">${i.a<0?'+':''}${won(Math.abs(i.a))}원</div>
+<button class="x" data-act="ex">${i.ex?'포함':'제외'}</button>
+<button class="x" data-act="del">삭제</button></div>`;
+}).join('') : `<div class="empty">아직 이번 주 지출이 없어요 👏</div>`;
+}
+$('list').addEventListener('click', e=>{
+const b = e.target.closest('button'); if(!b) return;
+const id = b.closest('.item').dataset.id, it = S.items.find(i=>i.id===id); if(!it) return;
+if(b.dataset.act==='del'){ if(confirmLike(it)) S.items = S.items.filter(i=>i.id!==id); }
+else it.ex = !it.ex;
+save(); render();
+});
+function confirmLike(){ return true; }
+/* ---------- UI ---------- */
+function openSheet(id){ $(id).classList.add('on'); }
+function closeSheets(){ document.querySelectorAll('.sheet-bg').forEach(s=>s.classList.remove('on')); }
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeSheets);
+document.querySelectorAll('.sheet-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)closeSheets()}));
+let tab='manual';
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+tab=b.dataset.tab; document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+$('tabManual').style.display = tab==='manual'?'':'none'; $('tabSms').style.display = tab==='sms'?'':'none';
+});
+$('openAdd').onclick=()=>{ $('inAmt').value='';$('inShop').value='';$('inSms').value=''; openSheet('addSheet'); };
+$('saveAdd').onclick=()=>{
+if(tab==='manual'){
+const a = parseInt(($('inAmt').value||'').replace(/[^0-9]/g,''),10);
+if(!a) return toast('금액을 넣어주세요');
+closeSheets(); addItem(a, $('inShop').value.trim()||'직접 입력', false);
+} else {
+const p = parseSms($('inSms').value);
+if(!p || p.error) return toast(p? p.error : '문자를 붙여넣어 주세요');
+closeSheets(); addItem(p.a, p.s, true);
+}
+};
+$('openSettings').onclick=()=>{ $('inLimit').value=S.limit; $('inWarn').value=S.warn; openSheet('setSheet'); };
+$('saveSet').onclick=()=>{
+const l = parseInt(($('inLimit').value||'').replace(/[^0-9]/g,''),10);
+const w = parseInt(($('inWarn').value||'').replace(/[^0-9]/g,''),10);
+if(l>0) S.limit=l; if(w>0 && w<100) S.warn=w;
+save(); closeSheets(); render(); toast('저장했어요');
+};
+$('testAlert').onclick=()=>{
+closeSheets(); const L = level(1.05);
+$('alert').style.background=L.bg; $('aEmoji').textContent=L.e; $('aT1').textContent=L.m;
+$('aT2').innerHTML='미리보기예요<br>실제로는 결제 직후 이렇게 떠요';
+$('alert').classList.add('on','shake');
+};
+$('aClose').onclick=()=>$('alert').classList.remove('on','shake');
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',2000); }
+/* ---------- incoming from Shortcut: #sms=... or ?sms=... ---------- */
+function handleIncoming(){
+const h = new URLSearchParams(location.hash.slice(1)), q = new URLSearchParams(location.search);
+const sms = h.get('sms') || q.get('sms');
+const amt = h.get('a') || q.get('a');
+if(!sms && !amt) return;
+// dedupe: same payload within 10 min is ignored (reopen/refresh)
+const sig = (sms||amt)+'';
+const now = Date.now(); S.seen = (S.seen||[]).filter(x=>now-x.t<6e5);
+history.replaceState(null,'',location.pathname);
+if(S.seen.some(x=>x.k===sig)) return;
+S.seen.push({k:sig,t:now}); save();
+if(sms){
+const p = parseSms(sms);
+if(!p || p.error){ toast('문자에서 금액을 못 찾았어요. 직접 추가해 주세요'); return; }
+addItem(p.a, p.s, true);
+} else {
+const a = parseInt(String(amt).replace(/[^0-9-]/g,''),10);
+if(a) addItem(a, h.get('s')||q.get('s')||'단축어', true);
+}
+}
+render(); handleIncoming();
+window.addEventListener('hashchange', ()=>{ handleIncoming(); });
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) render(); });
+</script>
+</body>
+</html>
