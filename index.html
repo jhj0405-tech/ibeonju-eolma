@@ -139,7 +139,7 @@ background:var(--ink);color:#fff;padding:12px 18px;border-radius:14px;font-size:
 <div class="verdict-num" id="vBody"></div>
 <div class="btns">
 <button class="yes" id="vSkip">참을게요 💪</button>
-<button class="no" id="vBuy">그래도 살게요</button>
+<button class="no" id="vBuy">그래도 살래 (후회할걸)</button>
 </div>
 </div>
 <!-- add sheet -->
@@ -207,6 +207,11 @@ x.setDate(x.getDate()-day); return x;
 }
 function thisWeek(){ const ws = weekStart().getTime(); return S.items.filter(i=>i.t>=ws); }
 function total(){ return thisWeek().filter(i=>!i.ex).reduce((s,i)=>s+i.a,0); }
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function goalNag(){
+const g = S.goal; if(!g.name && !g.amount) return '';
+return `<br><br>🎯 ${escapeHtml(g.name||'목표')} ${goalDday()}${g.amount?` · ${won(g.amount)}원 남았는데?`:''}`;
+}
 function daysLeft(){ return 7 - Math.floor((Date.now()-weekStart())/864e5); }
 function perDayFor(left){ return left>0 ? left/daysLeft() : 0; }
 function savedSum(fromT=0){ return S.saved.filter(x=>x.t>=fromT).reduce((s,x)=>s+x.a,0); }
@@ -218,9 +223,12 @@ return n>0 ? `D-${n}` : n===0 ? 'D-DAY' : `D+${-n}`;
 }
 function level(ratio){
 const w = (S.warn||90)/100;
-if(ratio>=1.5) return {e:'🔥',m:'완전 폭주 중',c:'var(--fire)',bg:'#b31d0b',alarm:true};
-if(ratio>=1)   return {e:'💀',m:'한도 초과!',c:'var(--bad)',bg:'#e0452b',alarm:true};
-if(ratio>=w)   return {e:'😰',m:'초과 직전!',c:'var(--warn)',bg:'#e8a317',alarm:true};
+if(ratio>=1.5) return {e:'🔥',m:'정신 나갔니?',c:'var(--fire)',bg:'#b31d0b',alarm:true,
+ms:['정신 나갔니?','지갑에 구멍 났어?','이번 주 완전히 망했다','미쳤어? 진짜로?']};
+if(ratio>=1)   return {e:'💀',m:'한도 넘었다고!',c:'var(--bad)',bg:'#e0452b',alarm:true,
+ms:['한도 넘었다고!','또 질렀어?','회생 끝내기 싫어?','이걸 왜 샀어?']};
+if(ratio>=w)   return {e:'😰',m:'멈춰. 지금 당장.',c:'var(--warn)',bg:'#e8a317',alarm:true,
+ms:['멈춰. 지금 당장.','카드 내려놔','정신 차려, 거의 다 썼어','한 번만 더 쓰면 끝이야']};
 if(ratio>=0.7) return {e:'😐',m:'슬슬 조심',c:'var(--warn)',bg:'#2b2b2b',alarm:false};
 if(ratio>=0.4) return {e:'🙂',m:'괜찮아요',c:'var(--ok)',bg:'#2f9e5b',alarm:false};
 return {e:'😎',m:'여유 넘쳐요',c:'var(--ok)',bg:'#2f9e5b',alarm:false};
@@ -270,9 +278,10 @@ if(L.alarm || big){
 const left = lim - t;
 $('alert').style.background = L.alarm ? L.bg : '#2f9e5b';
 $('aEmoji').textContent = L.alarm ? L.e : '✅';
-$('aT1').textContent = L.alarm ? L.m : '기록했어요';
+$('aT1').textContent = L.alarm ? pick(L.ms) : '기록했어요';
 $('aT2').innerHTML = `${s?escapeHtml(s)+' · ':''}${won(a)}원<br>` +
-(left>=0 ? `이번 주 남은 돈 <b>${won(left)}원</b>` : `한도보다 <b>${won(-left)}원</b> 더 썼어요`);
+(left>=0 ? `이번 주 남은 돈 <b>${won(left)}원</b>` : `한도보다 <b>${won(-left)}원</b> 더 썼어`) +
+(L.alarm ? goalNag() : '');
 $('alert').classList.toggle('shake', L.alarm);
 $('alert').classList.add('on');
 if(navigator.vibrate) navigator.vibrate(L.alarm?[200,100,200]:60);
@@ -368,8 +377,8 @@ save(); closeSheets(); render(); toast('저장했어요');
 };
 $('testAlert').onclick=()=>{
 closeSheets(); const L = level(1.05);
-$('alert').style.background=L.bg; $('aEmoji').textContent=L.e; $('aT1').textContent=L.m;
-$('aT2').innerHTML='미리보기예요<br>실제로는 결제 직후 이렇게 떠요';
+$('alert').style.background=L.bg; $('aEmoji').textContent=L.e; $('aT1').textContent=pick(L.ms);
+$('aT2').innerHTML='미리보기예요<br>실제로는 결제 직후 이렇게 떠요' + goalNag();
 $('alert').classList.add('on','shake');
 };
 $('aClose').onclick=()=>$('alert').classList.remove('on','shake');
@@ -387,10 +396,10 @@ pending = {a, s};
 const lim = S.limit||1, t = total(), left = lim - t, after = left - a;
 const pdNow = perDayFor(left), pdAfter = perDayFor(after);
 let e, t1, bg;
-if(after < 0){ e='💀'; t1='사면 이번 주 한도 초과예요'; bg='#e0452b'; }
-else if((t+a)/lim >= (S.warn||90)/100){ e='😰'; t1='사면 한도 거의 다 써요'; bg='#e8a317'; }
-else if(a > pdNow){ e='🤨'; t1='오늘 하루치보다 커요'; bg='#2b2b2b'; }
-else { e='🙂'; t1='이 정도는 괜찮아요'; bg='#2f9e5b'; }
+if(after < 0){ e='💀'; t1=pick(['정신 나갔니? 한도 터져','이거 사면 이번 주 끝장이야','회생 끝내기 싫어?']); bg='#e0452b'; }
+else if((t+a)/lim >= (S.warn||90)/100){ e='😰'; t1=pick(['진짜 이게 꼭 필요해?','카드 내려놔','이거 사면 남는 게 없어']); bg='#e8a317'; }
+else if(a > pdNow){ e='🤨'; t1=pick(['오늘 쓸 돈 넘었어. 참아','내일 굶을 거야?','하루치보다 비싸. 다시 생각해']); bg='#2b2b2b'; }
+else { e='🙂'; t1='이 정도는 봐준다'; bg='#2f9e5b'; }
 const g = S.goal;
 let body = `${s?escapeHtml(s)+' · ':''}<b>${won(a)}원</b><br>` +
 `이번 주 남은 돈 ${won(Math.max(left,0))}원 → <b>${after>=0?won(after)+'원':'-'+won(-after)+'원'}</b><br>` +
