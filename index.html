@@ -43,9 +43,27 @@ h2{font-size:15px;margin:26px 4px 10px;color:var(--sub);font-weight:600}
 .item.neg .amt{color:var(--ok)}
 .item .x{border:0;background:var(--bg);border-radius:10px;padding:6px 9px;font-size:13px;color:var(--sub)}
 .empty{padding:28px;text-align:center;color:var(--sub);font-size:14px}
-.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom));
-border:0;background:var(--ink);color:#fff;font-size:17px;font-weight:700;padding:16px 30px;
-border-radius:99px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.fabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom));
+display:flex;gap:10px;z-index:10}
+.fab{border:0;background:var(--ink);color:#fff;font-size:17px;font-weight:700;padding:16px 26px;
+border-radius:99px;box-shadow:0 8px 24px rgba(0,0,0,.18);white-space:nowrap}
+.fab.think{background:#fff;color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,.12),inset 0 0 0 2px var(--ink)}
+/* goal card */
+.goal{background:var(--ink);color:#fff;border-radius:22px;padding:18px 20px;margin-top:14px}
+.goal .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.goal .gname{font-weight:700;font-size:15px}
+.goal .dday{font-size:13px;opacity:.75;white-space:nowrap}
+.goal .gamt{font-size:24px;font-weight:800;margin-top:6px;letter-spacing:-.5px}
+.goal .gsub{font-size:13px;opacity:.8;margin-top:6px;line-height:1.5}
+.goal .gsub b{color:#8ee6a8}
+.goal.empty-goal{background:var(--card);color:var(--sub);text-align:center;font-size:14px;cursor:pointer}
+/* think verdict */
+.verdict-num{font-size:15px;line-height:1.7;margin-top:10px;background:rgba(255,255,255,.14);
+border-radius:16px;padding:14px 18px;text-align:left}
+.alert .btns{display:flex;flex-direction:column;gap:10px;margin-top:26px;width:min(320px,100%)}
+.alert .btns button{border:0;border-radius:99px;padding:15px;font-size:16px;font-weight:700}
+.alert .btns .yes{background:#fff;color:#1b1b1b}
+.alert .btns .no{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.6)}
 /* sheets */
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end;z-index:20}
 .sheet-bg.on{display:flex}
@@ -96,10 +114,34 @@ background:var(--ink);color:#fff;padding:12px 18px;border-radius:14px;font-size:
 <div style="text-align:right">오늘부터 하루<b id="perDay">0원</b></div>
 </div>
 </section>
+<div class="goal" id="goal"></div>
 <h2>이번 주 지출</h2>
 <div class="list" id="list"></div>
 </div>
+<div class="fabs">
+<button class="fab think" id="openThink">🤔 살까?</button>
 <button class="fab" id="openAdd">＋ 추가</button>
+</div>
+<!-- think sheet -->
+<div class="sheet-bg" id="thinkSheet">
+<div class="sheet">
+<h3>사기 전에 확인</h3>
+<label>얼마짜리예요?</label><input id="thAmt" inputmode="numeric" placeholder="35000">
+<label>뭔데요? (선택)</label><input id="thShop" placeholder="배달, 옷, 술자리...">
+<div class="hint">결제하기 전에 넣어 보세요. 이번 주 남은 돈과 목표에 어떤 영향이 있는지 보여줘요.</div>
+<div class="row"><button class="btn ghost" data-close>취소</button><button class="btn" id="thGo">확인하기</button></div>
+</div>
+</div>
+<!-- think verdict -->
+<div class="alert" id="verdict">
+<div class="big" id="vEmoji"></div>
+<div class="t1" id="vT1"></div>
+<div class="verdict-num" id="vBody"></div>
+<div class="btns">
+<button class="yes" id="vSkip">참을게요 💪</button>
+<button class="no" id="vBuy">그래도 살게요</button>
+</div>
+</div>
 <!-- add sheet -->
 <div class="sheet-bg" id="addSheet">
 <div class="sheet">
@@ -122,7 +164,15 @@ background:var(--ink);color:#fff;padding:12px 18px;border-radius:14px;font-size:
 <div class="sheet">
 <h3>설정</h3>
 <label>이번 주 한도 (매주 월요일 0시에 새로 시작)</label>
-<input id="inLimit" inputmode="numeric" placeholder="100000">
+<input id="inLimit" inputmode="numeric" placeholder="230000">
+<div class="hint">한 달 생활비(월세 같은 고정비 빼고) ÷ 4.3 으로 잡으면 돼요. 예: 100만원 → 약 23만원</div>
+<label>목표 이름</label>
+<input id="inGoalName" placeholder="회생 완납">
+<label>목표까지 남은 금액</label>
+<input id="inGoalAmt" inputmode="numeric" placeholder="8114731">
+<label>목표 날짜</label>
+<input id="inGoalDate" type="date">
+<div class="hint">갚을 때마다 남은 금액을 고쳐 주세요. 이 정보는 이 휴대폰에만 저장돼요.</div>
 <label>경고 시작 지점 (%)</label>
 <input id="inWarn" inputmode="numeric" placeholder="90">
 <div class="hint">이 비율을 넘으면 결제할 때마다 화면 가득 경고가 떠요.</div>
@@ -144,8 +194,9 @@ function load(){
 try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && d.items) return d; }catch(e){}
 return {limit:100000, warn:90, items:[], seen:[]};
 }
+function fill(d){ d.goal = d.goal||{name:'',amount:0,date:''}; d.saved = d.saved||[]; return d; }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
-let S = load();
+let S = fill(load());
 /* ---------- helpers ---------- */
 const won = n => Math.round(n).toLocaleString('ko-KR');
 const $ = id => document.getElementById(id);
@@ -156,6 +207,15 @@ x.setDate(x.getDate()-day); return x;
 }
 function thisWeek(){ const ws = weekStart().getTime(); return S.items.filter(i=>i.t>=ws); }
 function total(){ return thisWeek().filter(i=>!i.ex).reduce((s,i)=>s+i.a,0); }
+function daysLeft(){ return 7 - Math.floor((Date.now()-weekStart())/864e5); }
+function perDayFor(left){ return left>0 ? left/daysLeft() : 0; }
+function savedSum(fromT=0){ return S.saved.filter(x=>x.t>=fromT).reduce((s,x)=>s+x.a,0); }
+function goalDday(){
+if(!S.goal.date) return '';
+const d = new Date(S.goal.date+'T00:00:00'), t = new Date(); t.setHours(0,0,0,0);
+const n = Math.round((d-t)/864e5);
+return n>0 ? `D-${n}` : n===0 ? 'D-DAY' : `D+${-n}`;
+}
 function level(ratio){
 const w = (S.warn||90)/100;
 if(ratio>=1.5) return {e:'🔥',m:'완전 폭주 중',c:'var(--fire)',bg:'#b31d0b',alarm:true};
@@ -228,8 +288,9 @@ $('spent').textContent = won(t); $('limit').textContent = won(lim);
 $('bar').style.width = Math.min(100, ratio*100)+'%';
 const left = lim - t;
 $('left').textContent = left>=0 ? won(left)+'원' : '-'+won(-left)+'원';
-const ws = weekStart(), daysLeft = 7 - Math.floor((Date.now()-ws)/864e5);
-$('perDay').textContent = left>0 ? won(left/daysLeft)+'원' : '0원';
+const ws = weekStart();
+$('perDay').textContent = won(perDayFor(left))+'원';
+renderGoal(left);
 const we = new Date(ws); we.setDate(we.getDate()+6);
 $('weekLabel').textContent = `${ws.getMonth()+1}/${ws.getDate()} ~ ${we.getMonth()+1}/${we.getDate()}`;
 const items = thisWeek().sort((a,b)=>b.t-a.t);
@@ -243,6 +304,22 @@ return `<div class="item ${i.ex?'ex':''} ${i.a<0?'neg':''}" data-id="${i.id}">
 <button class="x" data-act="del">삭제</button></div>`;
 }).join('') : `<div class="empty">아직 이번 주 지출이 없어요 👏</div>`;
 }
+function renderGoal(left){
+const g = S.goal, el = $('goal');
+if(!g.name && !g.amount){
+el.className='goal empty-goal';
+el.innerHTML='🎯 목표를 정하면, 참은 돈이 어디로 가는지 보여줘요<br><b style="color:var(--ink)">눌러서 목표 설정</b>';
+return;
+}
+el.className='goal';
+const wk = savedSum(weekStart().getTime()), all = savedSum();
+const pct = g.amount ? Math.min(100, all/g.amount*100) : 0;
+el.innerHTML = `<div class="top"><div class="gname">🎯 ${escapeHtml(g.name||'목표')}</div><div class="dday">${goalDday()}</div></div>
+<div class="gamt">${won(g.amount||0)}원 남음</div>
+<div class="gsub">이번 주 참은 돈 <b>${won(wk)}원</b> · 지금까지 <b>${won(all)}원</b>${g.amount?` (목표의 ${pct.toFixed(1)}%)`:''}` +
+(left>0 ? `<br>이번 주 ${won(left)}원 남기면 그만큼 목표에 보탤 수 있어요` : '') + `</div>`;
+}
+$('goal').addEventListener('click', ()=>{ if(!S.goal.name && !S.goal.amount) $('openSettings').click(); });
 $('list').addEventListener('click', e=>{
 const b = e.target.closest('button'); if(!b) return;
 const id = b.closest('.item').dataset.id, it = S.items.find(i=>i.id===id); if(!it) return;
@@ -273,11 +350,20 @@ if(!p || p.error) return toast(p? p.error : '문자를 붙여넣어 주세요');
 closeSheets(); addItem(p.a, p.s, true);
 }
 };
-$('openSettings').onclick=()=>{ $('inLimit').value=S.limit; $('inWarn').value=S.warn; openSheet('setSheet'); };
+$('openSettings').onclick=()=>{
+$('inLimit').value=S.limit; $('inWarn').value=S.warn;
+$('inGoalName').value=S.goal.name||''; $('inGoalAmt').value=S.goal.amount||''; $('inGoalDate').value=S.goal.date||'';
+openSheet('setSheet');
+};
 $('saveSet').onclick=()=>{
 const l = parseInt(($('inLimit').value||'').replace(/[^0-9]/g,''),10);
 const w = parseInt(($('inWarn').value||'').replace(/[^0-9]/g,''),10);
 if(l>0) S.limit=l; if(w>0 && w<100) S.warn=w;
+S.goal = {
+name: $('inGoalName').value.trim(),
+amount: parseInt(($('inGoalAmt').value||'').replace(/[^0-9]/g,''),10)||0,
+date: $('inGoalDate').value||''
+};
 save(); closeSheets(); render(); toast('저장했어요');
 };
 $('testAlert').onclick=()=>{
@@ -287,6 +373,48 @@ $('aT2').innerHTML='미리보기예요<br>실제로는 결제 직후 이렇게 �
 $('alert').classList.add('on','shake');
 };
 $('aClose').onclick=()=>$('alert').classList.remove('on','shake');
+/* ---------- think before buying ---------- */
+let pending = null;
+$('openThink').onclick=()=>{ $('thAmt').value=''; $('thShop').value=''; openSheet('thinkSheet'); setTimeout(()=>$('thAmt').focus(),50); };
+$('thGo').onclick=()=>{
+const a = parseInt(($('thAmt').value||'').replace(/[^0-9]/g,''),10);
+if(!a) return toast('금액을 넣어주세요');
+const s = $('thShop').value.trim();
+closeSheets(); showVerdict(a, s);
+};
+function showVerdict(a, s){
+pending = {a, s};
+const lim = S.limit||1, t = total(), left = lim - t, after = left - a;
+const pdNow = perDayFor(left), pdAfter = perDayFor(after);
+let e, t1, bg;
+if(after < 0){ e='💀'; t1='사면 이번 주 한도 초과예요'; bg='#e0452b'; }
+else if((t+a)/lim >= (S.warn||90)/100){ e='😰'; t1='사면 한도 거의 다 써요'; bg='#e8a317'; }
+else if(a > pdNow){ e='🤨'; t1='오늘 하루치보다 커요'; bg='#2b2b2b'; }
+else { e='🙂'; t1='이 정도는 괜찮아요'; bg='#2f9e5b'; }
+const g = S.goal;
+let body = `${s?escapeHtml(s)+' · ':''}<b>${won(a)}원</b><br>` +
+`이번 주 남은 돈 ${won(Math.max(left,0))}원 → <b>${after>=0?won(after)+'원':'-'+won(-after)+'원'}</b><br>` +
+`하루 쓸 수 있는 돈 ${won(pdNow)}원 → <b>${won(pdAfter)}원</b>`;
+if(g.amount) body += `<br>참으면 ${escapeHtml(g.name||'목표')}의 ${(a/g.amount*100).toFixed(1)}%를 아껴요`;
+$('verdict').style.background = bg;
+$('vEmoji').textContent = e; $('vT1').textContent = t1; $('vBody').innerHTML = body;
+$('verdict').classList.toggle('shake', after<0);
+$('verdict').classList.add('on');
+if(navigator.vibrate) navigator.vibrate(after<0?[200,100,200]:60);
+}
+function closeVerdict(){ $('verdict').classList.remove('on','shake'); }
+$('vSkip').onclick=()=>{
+if(!pending) return closeVerdict();
+S.saved.push({a:pending.a, s:pending.s||'참음', t:Date.now()});
+save(); closeVerdict(); render();
+toast(`💪 ${won(pending.a)}원 참았어요! 지금까지 ${won(savedSum())}원`);
+pending = null;
+};
+$('vBuy').onclick=()=>{
+if(!pending) return closeVerdict();
+const p = pending; pending = null; closeVerdict();
+addItem(p.a, p.s||'직접 입력', false);
+};
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',2000); }
 /* ---------- incoming from Shortcut: #sms=... or ?sms=... ---------- */
 function handleIncoming(){
